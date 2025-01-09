@@ -3,6 +3,7 @@ import argparse
 import subprocess
 import re
 import platform
+
 import socket
 
 def resolve_url_to_ip(url_or_ip):
@@ -17,7 +18,6 @@ def resolve_url_to_ip(url_or_ip):
         except socket.gaierror:
             print(f"Erreur : Impossible de résoudre l'URL {url_or_ip}")
             return None
-
 
 def traceroute(url_or_ip, progressive=False, output_file=None):
     """
@@ -37,15 +37,20 @@ def traceroute(url_or_ip, progressive=False, output_file=None):
         if progressive:
             # Mode progressif : Affichage au fur et à mesure
             process = subprocess.Popen(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-            with open(output_file, "w") if output_file else None as file:
+            file = open(output_file, "w") if output_file else None  # Ouvre le fichier si spécifié
+            try:
                 for line in process.stdout:
                     ip_match = re.search(r"(\d+\.\d+\.\d+\.\d+)", line)
                     if ip_match:
                         ip = ip_match.group(1)
                         print(ip)  # Affichage progressif
                         result_lines.append(ip)
-                        if file:
+                        if file:  # Écriture progressive dans le fichier
                             file.write(ip + "\n")
+            finally:
+                if file:  # Ferme le fichier uniquement s'il est ouvert
+                    file.close()
+
         else:
             # Mode par défaut : Affichage après exécution complète
             result = subprocess.run(command, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, check=True)
